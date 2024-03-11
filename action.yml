@@ -14,6 +14,9 @@ inputs:
     description: 'Path to the Markdown files'
     required: false
     default: '.'
+  gitHubToken:
+    description: 'GitHub Token'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -42,5 +45,5 @@ runs:
         directory: html_output
         workingDirectory: .
         branch: ${{ github.head_ref }}
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        gitHubToken: ${{ inputs.gitHubToken }}
         wranglerVersion: '3'
