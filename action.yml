@@ -1,0 +1,46 @@
+name: 'Convert Markdown to HTML and Deploy to Cloudflare Pages'
+description: 'Converts all Markdown files to HTML and deploys to Cloudflare Pages'
+inputs:
+  apiToken:
+    description: 'Cloudflare API Token'
+    required: true
+  accountId:
+    description: 'Cloudflare Account ID'
+    required: true
+  projectName:
+    description: 'Cloudflare Pages Project Name'
+    required: true
+  markdownPath:
+    description: 'Path to the Markdown files'
+    required: false
+    default: '.'
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Pandoc
+      run: |
+        sudo apt-get install -y pandoc
+      shell: bash
+
+    - name: Convert Markdown to HTML
+      run: |
+        mkdir html_output
+        for file in $(find ${{ inputs.markdownPath }} -name "*.md"); do
+          pandoc --css github-markdown.css "$file" -o "html_output/${file%.md}.html"
+        done
+      shell: bash
+
+    - name: Publish to Cloudflare Pages
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ inputs.apiToken }}
+        accountId: ${{ inputs.accountId }}
+        projectName: ${{ inputs.projectName }}
+        directory: html_output
+        workingDirectory: .
+        branch: ${{ github.head_ref }}
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        wranglerVersion: '3'
