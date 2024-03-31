@@ -1,49 +1,49 @@
-name: 'Convert Markdown to HTML and Deploy to Cloudflare Pages'
-description: 'Converts all Markdown files to HTML and deploys to Cloudflare Pages'
+name: 'Build and Deploy to Cloudflare Pages'
+description: 'Builds a folder with Eleventy JS and deploys to Cloudflare Pages'
+
 inputs:
-  apiToken:
-    description: 'Cloudflare API Token'
+  build_folder:
+    description: 'Folder to build with Eleventy'
     required: true
-  accountId:
-    description: 'Cloudflare Account ID'
+  project_name:
+    description: 'Name of the site to publish on Cloudflare Pages'
     required: true
-  projectName:
-    description: 'Cloudflare Pages Project Name'
+  account_id:
+    description: 'Cloudflare account ID'
     required: true
-  markdownPath:
-    description: 'Path to the Markdown files'
+  api_token:
+    description: 'Cloudflare API token'
+    required: true
+  github_token:
+    description: 'GitHub token for creating deployments'
     required: false
-    default: '.'
-  gitHubToken:
-    description: 'GitHub Token'
-    required: false
+
 runs:
   using: "composite"
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Setup Pandoc
-      run: |
-        sudo apt-get install -y pandoc
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'
+
+    - name: Install Eleventy
+      run: npm install -g @11ty/eleventy
       shell: bash
 
-    - name: Convert Markdown to HTML
-      run: |
-        mkdir html_output
-        for file in $(find ${{ inputs.markdownPath }} -name "*.md"); do
-          pandoc --css github-markdown.css "$file" -o "html_output/${file%.md}.html"
-        done
+    - name: Build site with Eleventy
+      run: npx eleventy --input=${{ inputs.build_folder }} --output=_site
       shell: bash
 
-    - name: Publish to Cloudflare Pages
+    - name: Deploy to Cloudflare Pages
       uses: cloudflare/pages-action@v1
       with:
-        apiToken: ${{ inputs.apiToken }}
-        accountId: ${{ inputs.accountId }}
-        projectName: ${{ inputs.projectName }}
-        directory: html_output
+        accountId: ${{ inputs.account_id }}
+        apiToken: ${{ inputs.api_token }}
+        projectName: ${{ inputs.project_name }}
         workingDirectory: .
+        directory: './_site'
+        gitHubToken: ${{ inputs.github_token }}
         branch: ${{ github.head_ref }}
-        gitHubToken: ${{ inputs.gitHubToken }}
-        wranglerVersion: '3'
